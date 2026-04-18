@@ -9,15 +9,16 @@ class Zywrap
 {
     private string $apiKey;
     private string $baseUrl;
+    private bool $verifySsl;
 
     /**
      * Initialize the Zywrap client.
      *
      * @param string $apiKey Your Zywrap API Key.
-     * @param string $baseUrl Optional custom proxy endpoint.
+     * @param array $options Optional configuration ['baseUrl' => string, 'verifySsl' => bool]
      * @throws Exception
      */
-    public function __construct(string $apiKey, string $baseUrl = 'https://api.zywrap.com/v1/proxy')
+    public function __construct(string $apiKey, array $options = [])
     {
         $apiKey = trim($apiKey);
         if (empty($apiKey)) {
@@ -25,7 +26,10 @@ class Zywrap
         }
         
         $this->apiKey = $apiKey;
-        $this->baseUrl = $baseUrl;
+        $this->baseUrl = $options['baseUrl'] ?? 'https://api.zywrap.com/v1/proxy';
+        
+        // Default to TRUE for production security, but allow false for local testing
+        $this->verifySsl = $options['verifySsl'] ?? true; 
     }
 
     /**
@@ -44,7 +48,7 @@ class Zywrap
         $payload = [
             'model' => $params['model'],
             'wrapperCodes' => array_values($params['wrapperCodes']),
-            'variables' => $params['variables'] ?? new \stdClass(), // Ensure empty array becomes {} in JSON
+            'variables' => $params['variables'] ?? new \stdClass(), 
             'prompt' => $params['prompt'] ?? '',
             'source' => 'php_sdk'
         ];
@@ -64,9 +68,12 @@ class Zywrap
                 'Content-Type: application/json',
                 'Accept: application/json, text/event-stream',
                 'Authorization: Bearer ' . $this->apiKey,
-                'User-Agent: Zywrap/PhpSDK/1.0.1',
+                'User-Agent: Zywrap/PhpSDK/1.0.3', // Updated version
                 'Content-Length: ' . strlen($jsonPayload)
-            ]
+            ],
+            // Dynamically apply the SSL verification setting
+            CURLOPT_SSL_VERIFYPEER => $this->verifySsl,
+            CURLOPT_SSL_VERIFYHOST => $this->verifySsl ? 2 : 0
         ]);
 
         $response = curl_exec($ch);
@@ -78,7 +85,7 @@ class Zywrap
             throw new RuntimeException("Zywrap Network Error: " . $error);
         }
 
-        // --- THE FIX: Parse the SSE Stream ---
+        // Parse the SSE Stream
         $finalJson = null;
         $lines = explode("\n", $response);
         
