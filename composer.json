@@ -1,9 +1,3 @@
----
-
-### 4. PHP Package (`php/`)
-
-**`zywrap-sdk/php/composer.json`**
-```json
 {
     "name": "zywrapai/zywrap-php",
     "description": "The official PHP SDK for the Zywrap AI API.",
@@ -13,7 +7,7 @@
     "authors": [
         {
             "name": "Zywrap Team",
-            "homepage": "https://zywrap.com"
+            "homepage": "[https://zywrap.com](https://zywrap.com)"
         }
     ],
     "require": {
